@@ -13,7 +13,7 @@ def main(args):
 		part1 = expr2.match(file).group(1)
 		part2 = expr2.match(file).group(2)
 
-		ebcdic2ascii.main([source + "/" + file, source + "/" + part1 + "_temp." + part2])
+		ebcdic2ascii.files([source + "/" + file, source + "/" + part1 + "_temp." + part2])
 
 
 if __name__ == "__main__":

@@ -124,28 +124,12 @@ def EncodeChars(literal):
 def EncodePrintF(literal):
    return EncodeInEBCDIC(literal.group(0))
 
-def main(args):
-   # parser = optparse.OptionParser()
-   # parser.set_usage("""ebcdic2ascii.py [options] input.cc output.cc 
-   # input.cc: File to be converted 
-   # output.cc: Converted File.""")
-   # parser.add_option("-u", action="store_true", dest="unicode_support", default = False, help="convert strings using u8 prefix")
-   # parser.add_option("--skip_print", action="store_true", dest="skip_print_strings", default = False, help="skip strings going to snprtinf,printf,output stream")
+def files(file_list):
+   Source = open(file_list[0], "rt")
+   Target = open(file_list[1], "at+")
+   convert(Source, Target, False, False, file_list[0])
 
-   # (options, args) = parser.parse_args()
-
-   # Source          = open(args[0], "rt")
-   # Target          = open(args[1], "at+")
-
-   # unicode_encode             = options.unicode_support;
-   # skip_print_strings         = options.skip_print_strings; 
-
-   Source          = open(args[0], "rt")
-   Target          = open(args[1], "at+")
-
-   unicode_encode             = False;
-   skip_print_strings         = False; 
-
+def convert(Source, Target, unicode_encode, skip_print_strings, filename):
    ebcdic_encoding = False
    convert_start = False
    convert_end = False
@@ -286,11 +270,32 @@ def main(args):
 
    # MINE
    if (len(all_headers) != 0):
-      all_headers.append(args[0])
+      all_headers.append(filename)
       read_files.main(all_headers)
+
+def main():
+   parser = optparse.OptionParser()
+   parser.set_usage("""ebcdic2ascii.py [options] input.cc output.cc 
+   input.cc: File to be converted 
+   output.cc: Converted File.""")
+   parser.add_option("-u", action="store_true", dest="unicode_support", default = False, help="convert strings using u8 prefix")
+   parser.add_option("--skip_print", action="store_true", dest="skip_print_strings", default = False, help="skip strings going to snprtinf,printf,output stream")
+
+   (options, args) = parser.parse_args()
+
+   Source          = open(args[0], "rt")
+   Target          = open(args[1], "at+")
+
+   unicode_encode             = options.unicode_support;
+   skip_print_strings         = options.skip_print_strings; 
+
+   convert(Source, Target, unicode_encode, skip_print_strings, args[0])
       
    return 0
 
 if __name__ == "__main__":
    # MINE
-   sys.exit(main(sys.argv[1:]))
+   sys.exit(main())
+
+
+
