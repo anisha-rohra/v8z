@@ -4,16 +4,17 @@ def main(args):
 	print(args)
 
 	expr1 = re.compile("(.*)/.*")
-	source = expr1.match(args[-1]).group(1)
-	print(source)
-	
-	for file in args[:-1]:	
+	source = expr1.match(args[1]).group(1)
 
-		expr2 = re.compile("(.*)\.(.*)")
-		part1 = expr2.match(file).group(1)
-		part2 = expr2.match(file).group(2)
+	expr2 = re.compile("(.*)\.(.*)")
+	part1 = expr2.match(args[0]).group(1)
+	part2 = expr2.match(args[0]).group(2)
+	source_header_path = source + "/" + args[0]
+	target_header_path = source + "/" + part1 + "_temp." + part2
 
-		ebcdic2ascii.files([source + "/" + file, source + "/" + part1 + "_temp." + part2])
+	ebcdic2ascii.files([source_header_path, target_header_path])
+
+	return part1 + "_temp." + part2
 
 
 if __name__ == "__main__":

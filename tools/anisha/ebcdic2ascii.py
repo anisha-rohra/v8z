@@ -15,8 +15,8 @@ USTR_MACRO          = "(USTR)"
 STRING              = '(".*?(?<!\\\\)")'
 CHAR                = "('.{1,2}')"
 HEX_CHAR            = "('\\\\x[0-9A-Fa-f]{1,2}')"
-IGNORE_STRING       = "#\s*pragma|\s*//|extern\s+\"C\""
-INCLUDE_STRING      = "#\s*include" # MINE
+IGNORE_STRING       = "#\s*include\s*<.*>|#\s*pragma|\s*//|extern\s+\"C\""
+INCLUDE_STRING      = '#\s*include\s*".*"' # MINE
 HEX_ENCODED_STRING  = r'(?:\\x[0-9A-Fa-f]{1,2})+'
 CONCAT              = "(##)"
 STRINGIFY           = "(#{1}\w+)"
@@ -124,12 +124,13 @@ def EncodeChars(literal):
 def EncodePrintF(literal):
    return EncodeInEBCDIC(literal.group(0))
 
+# MINE
 def files(file_list):
    Source = open(file_list[0], "rt")
    Target = open(file_list[1], "at+")
-   convert(Source, Target, False, False, file_list[0])
+   convert(Source, Target, False, False, file_list[0], file_list[1])
 
-def convert(Source, Target, unicode_encode, skip_print_strings, filename):
+def convert(Source, Target, unicode_encode, skip_print_strings, source_filename, target_filename):
    ebcdic_encoding = False
    convert_start = False
    convert_end = False
@@ -254,24 +255,21 @@ def convert(Source, Target, unicode_encode, skip_print_strings, filename):
 
       # MINE
       if include_line:
-         LIB_RE = re.compile("<*>")
-         if not LIB_RE.search(line):
-            HEADER_RE = re.compile('#\s*include "(.*)"')
-            h = HEADER_RE.search(line).group(1)
-            all_headers.append(h)
+         print(line)
+         HEADER_RE = re.compile('#\s*include "(.*)"')
+         h = HEADER_RE.search(line).group(1)
+         all_headers.append(h)
+         target_header = read_files.main([h, source_filename])
+         Target.write('#include "' + target_header + '"\n')
 
-      comment_end = MULTILINE_COMMENT_END.match(line)
-      convert_end = EBCDIC_PRAGMA_END.match(line)
-      line = line 
-      Target.write(line) 
+      else:
+         comment_end = MULTILINE_COMMENT_END.match(line)
+         convert_end = EBCDIC_PRAGMA_END.match(line)
+         line = line 
+         Target.write(line)
 
    Source.close()
    Target.close()
-
-   # MINE
-   if (len(all_headers) != 0):
-      all_headers.append(filename)
-      read_files.main(all_headers)
 
 def main():
    parser = optparse.OptionParser()
@@ -289,7 +287,7 @@ def main():
    unicode_encode             = options.unicode_support;
    skip_print_strings         = options.skip_print_strings; 
 
-   convert(Source, Target, unicode_encode, skip_print_strings, args[0])
+   convert(Source, Target, unicode_encode, skip_print_strings, args[0], args[1])
       
    return 0
 
