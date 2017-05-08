@@ -128,9 +128,9 @@ def EncodePrintF(literal):
 def files(file_list):
    Source = open(file_list[0], "rt")
    Target = open(file_list[1], "at+")
-   convert(Source, Target, False, False, file_list[0], file_list[1])
+   convert(Source, Target, False, False, file_list[0])
 
-def convert(Source, Target, unicode_encode, skip_print_strings, source_filename, target_filename):
+def convert(Source, Target, unicode_encode, skip_print_strings, source_filename):
    ebcdic_encoding = False
    convert_start = False
    convert_end = False
@@ -142,7 +142,6 @@ def convert(Source, Target, unicode_encode, skip_print_strings, source_filename,
    skip_line = False 
    # MINE
    include_line = False
-   all_headers = []
 
    #Main loop which identifies and encodes literals with hex escape sequences
    for line in Source:
@@ -156,7 +155,6 @@ def convert(Source, Target, unicode_encode, skip_print_strings, source_filename,
        or multiline_comment or ebcdic_encoding 
       include_line = INCLUDE_RE.match(line)
 
-      # MINE
       if not skip_line and not include_line:
          tokens_of_interest = re.split(SPLIT_RE, line)
          tokens_of_interest = filter(None, tokens_of_interest)
@@ -258,7 +256,6 @@ def convert(Source, Target, unicode_encode, skip_print_strings, source_filename,
          print(line)
          HEADER_RE = re.compile('#\s*include "(.*)"')
          h = HEADER_RE.search(line).group(1)
-         all_headers.append(h)
          target_header = read_files.main([h, source_filename])
          Target.write('#include "' + target_header + '"\n')
 
@@ -287,12 +284,12 @@ def main():
    unicode_encode             = options.unicode_support;
    skip_print_strings         = options.skip_print_strings; 
 
-   convert(Source, Target, unicode_encode, skip_print_strings, args[0], args[1])
-      
+   convert(Source, Target, unicode_encode, skip_print_strings, args[0])
+   read_files.reset_blacklist()
+
    return 0
 
 if __name__ == "__main__":
-   # MINE
    sys.exit(main())
 
 
