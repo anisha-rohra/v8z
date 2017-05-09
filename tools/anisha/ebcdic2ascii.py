@@ -125,13 +125,20 @@ def EncodePrintF(literal):
 # takes in a file list and parameters for unicode encoding and skipping print strings
 # intended for use by other python programs, not for scripts for commandline
 def open_files(file_list, unicode_encode=False, skip_print_strings=False):
-   convert_to_ascii(file_list, unicode_encode, skip_print_strings)
-   read_files.reset_blacklist()
 
+   # error-check: need exactly two file paths in file_list
+   if len(file_list) != 2:
+      print("ERROR: Source and target file path required.")
+      return 1
+
+   convert_to_ascii(file_list, unicode_encode, skip_print_strings)
+
+   # resets the global blacklist contained in read_files.py for header files
+   read_files.reset_blacklist()
+   return 0
 
 # main function to convert from ebcdic to ascii
 def convert_to_ascii(filenames, unicode_encode, skip_print_strings):
-
    Source          = open(filenames[0], "rt")
    Target          = open(filenames[1], "at+")
 
@@ -274,9 +281,12 @@ def convert_to_ascii(filenames, unicode_encode, skip_print_strings):
    Source.close()
    Target.close()
 
-# parses the arguements given from command line or os process in order to determine
-# the filenames, unicoding encoding, and skipping print strings
+# parses the arguments given from command line or os process in order to determine
+# the filenames, unicode encoding, and skip print strings options
 def parse_arguments():
+
+   # parse the command line arguments, looking for potential flags -u and --skip_print
+   # along with two file paths, input and output
    parser = optparse.OptionParser()
    parser.set_usage("""ebcdic2ascii.py [options] input.cc output.cc 
    input.cc: File to be converted 
@@ -286,11 +296,19 @@ def parse_arguments():
 
    (options, args) = parser.parse_args()
 
+   # error-check: two arguments from command-line expected
+   if len(args) != 2:
+      print("ERROR: Source and target file path required.")
+      return 1
+
    unicode_encode             = options.unicode_support;
    skip_print_strings         = options.skip_print_strings; 
 
    convert_to_ascii(args, unicode_encode, skip_print_strings)
+
+   # resets the global blacklist contained in read_files.py for header files
    read_files.reset_blacklist()
+   return 0
 
 if __name__ == "__main__":
    sys.exit(parse_arguments())
