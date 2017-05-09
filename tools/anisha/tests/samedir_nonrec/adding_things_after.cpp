@@ -1,6 +1,6 @@
 #include <iostream>
-#include "add.h"
-#include "subtract.h"
+#include "add_temp.h"
+#include "subtract_temp.h"
 
 int main() {
 	std::cout << "\xff\xff\x25\x25\x3f\xff\xff\x3f\xff\x25\xff\xff";
