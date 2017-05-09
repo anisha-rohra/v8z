@@ -22,7 +22,7 @@ def main(args):
 
 	if not header_exists(source_header_path):
 		blacklist.append(source_header_path)
-		ebcdic2ascii.files([source_header_path, target_header_path])
+		ebcdic2ascii.open_files([source_header_path, target_header_path], False, False)
 		
 	return part1 + "_temp." + part2
 

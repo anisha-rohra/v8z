@@ -16,7 +16,7 @@ STRING              = '(".*?(?<!\\\\)")'
 CHAR                = "('.{1,2}')"
 HEX_CHAR            = "('\\\\x[0-9A-Fa-f]{1,2}')"
 IGNORE_STRING       = "#\s*include\s*<.*>|#\s*pragma|\s*//|extern\s+\"C\""
-INCLUDE_STRING      = '#\s*include\s*".*"' # MINE
+INCLUDE_STRING      = '#\s*include\s*".*"'
 HEX_ENCODED_STRING  = r'(?:\\x[0-9A-Fa-f]{1,2})+'
 CONCAT              = "(##)"
 STRINGIFY           = "(#{1}\w+)"
@@ -28,10 +28,8 @@ EBCDIC_PRAGMA_END    = re.compile(r"\s*#pragma\s+convert\s*\(\s*pop\s*\)")
 MULTILINE_COMMENT_START  = re.compile(r"^\s*/\*")
 MULTILINE_COMMENT_END    = re.compile(r".*\*/\s*")
 
-
 #ignore lines starting with
 IGNORE_RE = re.compile(IGNORE_STRING)
-# MINE
 INCLUDE_RE = re.compile(INCLUDE_STRING)
 
 #C-string literals in the source
@@ -124,13 +122,21 @@ def EncodeChars(literal):
 def EncodePrintF(literal):
    return EncodeInEBCDIC(literal.group(0))
 
-# MINE
-def files(file_list):
-   Source = open(file_list[0], "rt")
-   Target = open(file_list[1], "at+")
-   convert(Source, Target, False, False, file_list[0])
+# takes in a file list and parameters for unicode encoding and skipping print strings
+# intended for use by other python programs, not for scripts for commandline
+def open_files(file_list, unicode_encode=False, skip_print_strings=False):
+   convert_to_ascii(file_list, unicode_encode, skip_print_strings)
+   read_files.reset_blacklist()
 
-def convert(Source, Target, unicode_encode, skip_print_strings, source_filename):
+
+# main function to convert from ebcdic to ascii
+def convert_to_ascii(filenames, unicode_encode, skip_print_strings):
+
+   Source          = open(filenames[0], "rt")
+   Target          = open(filenames[1], "at+")
+
+   # flags to determine exactly what the line of code in the source contains
+
    ebcdic_encoding = False
    convert_start = False
    convert_end = False
@@ -140,7 +146,6 @@ def convert(Source, Target, unicode_encode, skip_print_strings, source_filename)
    comment_end = False
 
    skip_line = False 
-   # MINE
    include_line = False
 
    #Main loop which identifies and encodes literals with hex escape sequences
@@ -158,6 +163,7 @@ def convert(Source, Target, unicode_encode, skip_print_strings, source_filename)
       if not skip_line and not include_line:
          tokens_of_interest = re.split(SPLIT_RE, line)
          tokens_of_interest = filter(None, tokens_of_interest)
+
          #Mark strings inside functions and between outstream_op which we do not want to be modified 
          delimiters = []
          delete = False
@@ -256,7 +262,7 @@ def convert(Source, Target, unicode_encode, skip_print_strings, source_filename)
          print(line)
          HEADER_RE = re.compile('#\s*include "(.*)"')
          h = HEADER_RE.search(line).group(1)
-         target_header = read_files.main([h, source_filename])
+         target_header = read_files.main([h, filenames[0]])
          Target.write('#include "' + target_header + '"\n')
 
       else:
@@ -268,7 +274,9 @@ def convert(Source, Target, unicode_encode, skip_print_strings, source_filename)
    Source.close()
    Target.close()
 
-def main():
+# parses the arguements given from command line or os process in order to determine
+# the filenames, unicoding encoding, and skipping print strings
+def parse_arguments():
    parser = optparse.OptionParser()
    parser.set_usage("""ebcdic2ascii.py [options] input.cc output.cc 
    input.cc: File to be converted 
@@ -278,19 +286,12 @@ def main():
 
    (options, args) = parser.parse_args()
 
-   Source          = open(args[0], "rt")
-   Target          = open(args[1], "at+")
-
    unicode_encode             = options.unicode_support;
    skip_print_strings         = options.skip_print_strings; 
 
-   convert(Source, Target, unicode_encode, skip_print_strings, args[0])
+   convert_to_ascii(args, unicode_encode, skip_print_strings)
    read_files.reset_blacklist()
 
-   return 0
-
 if __name__ == "__main__":
-   sys.exit(main())
-
-
+   sys.exit(parse_arguments())
 
