@@ -47,7 +47,7 @@ def main(args):
 			return 1
 
 		blacklist.append(source_header_path)
-		ebcdic2ascii.open_files([source_header_path, target_header_path], False, False)
+		ebcdic2ascii.open_files([source_header_path, target_header_path], False, False, args[2])
 		
 	# return the location to the target header path so that it can be written into the
 	# translated source file

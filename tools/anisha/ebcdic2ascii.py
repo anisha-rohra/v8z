@@ -164,7 +164,7 @@ def convert_to_ascii(filenames, unicode_encode, skip_print_strings, include_path
          if a is not None:
             absolute_path = a.group(1)
             print(absolute_path)
-            target_header = read_files.main([absolute_path, ''])
+            target_header = read_files.main([absolute_path, '', include_paths])
             Target.write('#include "' + target_header + '"\n')
          
          else:
@@ -173,12 +173,12 @@ def convert_to_ascii(filenames, unicode_encode, skip_print_strings, include_path
             h = HEADER_RE.search(line)
             if h is not None:
                header_path = h.group(1)
-               target_header = read_files.main([header_path, filenames[0]])         
+               target_header = read_files.main([header_path, filenames[0], include_paths])         
                if target_header == 1:
                   print("no relative path exists")
                   for path in include_paths:
                      print(path)
-                     target_header = read_files.main([header_path, path])
+                     target_header = read_files.main([header_path, path, include_paths])
                      if target_header != 1:
                         break
                Target.write('#include "' + target_header + '"\n')
@@ -191,7 +191,7 @@ def convert_to_ascii(filenames, unicode_encode, skip_print_strings, include_path
                print(include_brackets_path)
                for path in include_paths:
                   print(path)
-                  target_header = read_files.main([include_brackets_path, path])
+                  target_header = read_files.main([include_brackets_path, path, include_paths])
                   if target_header != 1:
                      break
 
