@@ -1,6 +1,6 @@
 #ifndef ADD_H
 #define ADD_H
-#define HELLO "\xff\xff\x25\x25\x3f"
+#define HELLO "hello"
  
 // This is the content of the .h file, which is where the declarations go
 int add(int x, int y); // function prototype for add.h -- don't forget the semicolon! 

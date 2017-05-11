@@ -78,7 +78,6 @@ def convert_to_ascii(filenames, unicode_encode, skip_print_strings, include_path
        or multiline_comment or ebcdic_encoding
       include_line = INCLUDE_RE.match(line)
 
-      # if it isn't to be skipped
       if not skip_line and not include_line:
          tokens_of_interest = re.split(SPLIT_RE, line)
          tokens_of_interest = filter(None, tokens_of_interest)
@@ -135,7 +134,6 @@ def convert_to_ascii(filenames, unicode_encode, skip_print_strings, include_path
                      encoded_literal = reduce(lambda x,y: x+y, map(ConvertTokens, token_list))
                      encoded_literal = "\"" + encoded_literal + "\""
                      token = encoded_literal
-
             if CHAR_RE.match(token):
                if not ostream_string:
                   char = token[1:len(token)-1]

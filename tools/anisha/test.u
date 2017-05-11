@@ -1,0 +1,5 @@
+/some/thing/that/should/be/ignored
+tests/shell/test1/nested/add.h
+tests/shell/test1/nested/subtract.h
+tests/shell/test1/multiply.h
+/pls/ignore
