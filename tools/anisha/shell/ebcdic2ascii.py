@@ -45,6 +45,7 @@ def make_delimiters(tokens_of_interest, skip_print_strings):
 
 # main function to convert from ebcdic to ascii
 def convert_to_ascii(filenames, unicode_encode, skip_print_strings, include_paths, include_paths_names):
+   print("line 48, e2a")
    Source          = open(filenames[0], "rt")
    Target          = open(filenames[1], "at+")
 
@@ -78,6 +79,7 @@ def convert_to_ascii(filenames, unicode_encode, skip_print_strings, include_path
        or multiline_comment or ebcdic_encoding
       include_line = INCLUDE_RE.match(line)
 
+      # if it isn't to be skipped
       if not skip_line and not include_line:
          tokens_of_interest = re.split(SPLIT_RE, line)
          tokens_of_interest = filter(None, tokens_of_interest)
@@ -134,6 +136,7 @@ def convert_to_ascii(filenames, unicode_encode, skip_print_strings, include_path
                      encoded_literal = reduce(lambda x,y: x+y, map(ConvertTokens, token_list))
                      encoded_literal = "\"" + encoded_literal + "\""
                      token = encoded_literal
+
             if CHAR_RE.match(token):
                if not ostream_string:
                   char = token[1:len(token)-1]
@@ -163,13 +166,15 @@ def convert_to_ascii(filenames, unicode_encode, skip_print_strings, include_path
          a = ABSOLUTE_RE.search(line)
          if a is not None:
             absolute_path = a.group(1)
-            target_header = read_files.main([absolute_path, '', include_paths, include_paths_names])
+            target_header = read_files.recursive_headers(absolute_path, '', include_paths, include_paths_names)
             Target.write('#include "' + target_header + '"\n')
 
          else:
+            # check if it's a "" or a <> include statement
             FILE_QUOTES_RE = re.compile('#\s*include\s*"(.*)"')
             FILE_BRACKETS_RE = re.compile('#\s*include\s*<(.*)>')
 
+            # get the file path provided in the source file
             include_file = FILE_QUOTES_RE.match(line)
             if include_file is None:
                 quotes = False
@@ -177,18 +182,30 @@ def convert_to_ascii(filenames, unicode_encode, skip_print_strings, include_path
             else:
                 include_file = include_file.group(1)
 
-            FILE_END_ONLY = re.compile('.*/(.*)')
+            # get only the end of the file - the filename
+            FILE_END_ONLY = re.compile('(.*)/(.*)')
             include_end = FILE_END_ONLY.search(include_file)
             if include_end is not None:
-                include_end = include_end.group(1)
+                include_end = include_end.group(2)
             else:
                 include_end = include_file
 
+            # if the filename is in the include_paths_names providied by the .h file
+            # search for the path provided in the include_paths array
             if include_end in include_paths_names:
                 full_path = include_paths[include_paths_names.index(include_end)]
-                target_header = read_files.main([full_path, include_file, include_paths, include_paths_names])
+                target_header = read_files.recursive_headers(full_path.strip(), include_file, include_paths, include_paths_names)
             else:
-                target_header = include_file
+                # otherwise, search using the name itself
+                file_beginning = FILE_END_ONLY.match(filenames[0])
+                if file_beginning is not None:
+                    target_header = read_files.recursive_headers(file_beginning.group(1) + "/" + include_file, include_file, include_paths, include_paths_names)
+                else:
+                    target_header = read_files.recursive_headers(include_file, include_file, include_paths, include_paths_names)
+
+                # if all else fails, it is a standard library include, rewrite it as the original
+                if target_header == 1:
+                    target_header = include_file
 
             if quotes:
                 Target.write('#include "' + target_header + '"\n')
@@ -231,17 +248,20 @@ def parse_arguments():
 
    includes = []
    files = []
-   header_file = open(options.headers, 'rt')
-   for line in header_file:
-       ABSOLUTE_RE = re.compile('/.*')
-       absolute_match = ABSOLUTE_RE.match(line)
-       if absolute_match is None:
-           includes.append(line.rstrip())
-           FILE_RE = re.compile('.*/(.*)')
-           files.append(FILE_RE.search(line).group(1))
+   if options.headers != []:
+       header_file = open(options.headers, 'rt')
+       for line in header_file:
+           ABSOLUTE_RE = re.compile('\s*/.*')
+           absolute_match = ABSOLUTE_RE.match(line)
+           if absolute_match is None:
+               includes.append(line.rstrip())
+               FILE_RE = re.compile('.*/(.*)')
+               fsearch = FILE_RE.match(line)
+               if fsearch is not None:
+                   files.append(fsearch.group(1))
+               else:
+                   files.append(line.strip())
 
-   if options.include_paths != []:
-       includes = includes + options.include_paths
    convert_to_ascii(args, unicode_encode, skip_print_strings, includes, files)
 
    # resets the global blacklist contained in read_files.py for header files
