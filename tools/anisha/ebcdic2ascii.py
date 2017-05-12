@@ -233,7 +233,6 @@ def parse_arguments():
    output.cc: Converted File.""")
    parser.add_option("-u", action="store_true", dest="unicode_support", default = False, help="convert strings using u8 prefix")
    parser.add_option("--skip_print", action="store_true", dest="skip_print_strings", default = False, help="skip strings going to snprtinf,printf,output stream")
-   parser.add_option("-I", action="append", dest="include_paths", default=[], help="provide another root path to look at for #include statements")
    parser.add_option("-H", action="store", dest="headers", default=[], help="provide a file that contains all the dependencies")
 
    (options, args) = parser.parse_args()
@@ -267,8 +266,6 @@ def parse_arguments():
                    else:
                        files.append(line.strip())
 
-   print("includes", includes)
-   print("files", files)
    convert_to_ascii(args, unicode_encode, skip_print_strings, includes, files)
 
    # resets the global blacklist contained in read_files.py for header files
