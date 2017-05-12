@@ -1,23 +1,23 @@
 #!/bin/bash
 
-for d in $(find *temp*)
+for d in $(find $1/*temp*)
 do
   rm $d
 done
 
-for d in $(find *.u)
+for d in $(find $1/*.u)
 do
   rm $d
 done
 
-for d in $(find *\_after*)
+for d in $(find $1/*\_after*)
 do
   rm $d
 done
 
-for d in $(find *.o)
+for d in $(find $1/*.o)
 do
   rm $d
 done
 
-rm a.out
+rm $1/a.out
