@@ -5,20 +5,10 @@ do
   rm $d
 done
 
-for d in $(find $1 -name "*.u")
-do
-  rm $d
-done
-
-for d in $(find $1 -name "*_after.*")
-do
-  rm $d
-done
-
-for d in $(find $1 -name "*.o")
-do
-  rm $d
-done
+if [ -f $(find . -name "*.u") ]
+then
+    rm $(find . -name "*.u")
+fi
 
 if [ -f $1/garbage.c ]
 then
