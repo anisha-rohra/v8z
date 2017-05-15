@@ -1,4 +1,4 @@
-import ebcdic2ascii, sys, re, os
+import ebcdic2ascii, sys, re, os, ebcdic2ascii_encoder
 
 blacklist = []
 
@@ -14,7 +14,6 @@ def recursive_headers(filepath, filename, include_paths, include_names):
 
 	# need to separate the path before and after the extension in order to
 	# include the _temp portion
-	DOT = re.compile('(.*)\.(.*)')
 	dot_search = DOT.search(filepath)
 	dot_search2 = DOT.search(filename)
 

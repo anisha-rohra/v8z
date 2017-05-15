@@ -18,6 +18,7 @@ def open_files(file_list, unicode_encode=False, skip_print_strings=False, includ
     read_files.reset_blacklist()
     return 0
 
+# makes the delimiters given tokens of interest
 def make_delimiters(tokens_of_interest, skip_print_strings):
     delimiters = []
     delete = False
@@ -43,9 +44,127 @@ def make_delimiters(tokens_of_interest, skip_print_strings):
 
     return delimiters
 
+# takes the tokens and determines the new line that will replace the old
+def determine_new_line(tokens_of_interest, delimiters, skip_print_strings):
+    index = 0;
+    newline = ""
+    delimiters.reverse()
+    start_index = -1;
+    stop_index  = -1;
+    ostream_string = False
+
+    while index < (len(tokens_of_interest)):
+        token = tokens_of_interest[index];
+
+        if USTR_MACRO_RE.match(token) or (skip_print_strings and PRINT_FUNCTIONS_RE.match(token)):
+            if len(delimiters) > 0:
+                (start_index, stop_index) = delimiters.pop();
+            token = token
+            newline = newline + token
+            index = index +1
+            continue
+
+        if index >= start_index and index <= stop_index:
+            token = token
+            newline = newline + token
+            index = index + 1
+            continue
+
+        if skip_print_strings and OUTSTREAM_OP_RE.match(token):
+            if not ostream_string:
+                ostream_string = True;
+            else:
+                ostream_string = False;
+
+        if NEWLINE_RE.match(token):
+            if ostream_string:
+                ostream_string = False;
+
+        if STRING_RE.match(token):
+            if not ostream_string:
+                literal = token
+            if unicode_encode:
+                if not HEX_ENCODED_STRING_RE.match(literal):
+                    unicode_literal = "u8" + literal
+                    token = unicode_literal
+            else:
+                encoded_literal = literal[1:len(literal)-1]
+                encoded_literal = re.sub(ESCAPE_RE, EncodeEscapeSeq,encoded_literal)
+                encoded_literal = re.sub(PRINTF_RE, EncodePrintF, encoded_literal)
+                token_list = re.split(HEX_RE, encoded_literal)
+                encoded_literal = reduce(lambda x,y: x+y, map(ConvertTokens, token_list))
+                encoded_literal = "\"" + encoded_literal + "\""
+                token = encoded_literal
+
+        if CHAR_RE.match(token):
+            if not ostream_string:
+                char = token[1:len(token)-1]
+                encoded_char = ''
+                escape_seq = ESCAPE_RE.match(char)
+            if escape_seq:
+                encoded_char = EncodeEscapeSeq(escape_seq)
+            else:
+                encoded_char = ConvertTokens(char)
+            char = "'" + char + "'"
+            encoded_char = "'" + encoded_char + "'"
+            token =  encoded_char
+
+        if STRINGIFY_RE.match(token):
+            converted_token = ConvertMacroArgs(token)
+            token = converted_token
+
+        newline = newline + token
+        index = index + 1;
+
+    return newline
+
+# given an include statement line, call the fuction that recursively deals
+# with header files then return the name of the new temporary header file
+def find_target_header(line, filenames, include_paths, include_paths_names):
+    target_header = 0
+    quotes = True
+
+    # check if it's a "" or a <> include statement
+    include_file = FILE_QUOTES_RE.match(line)
+    if include_file is None:
+        quotes = False
+        include_file = FILE_BRACKETS_RE.match(line).group(1)
+    else:
+        include_file = include_file.group(1)
+
+    # check if its an absolute path, as those take priority
+    a = ABSOLUTE_RE.match(include_file)
+    if a is not None:
+        target_header = read_files.recursive_headers(a.group(1), '', include_file, include_paths, include_paths_names)
+    else:
+        # get only the end of the file - the filename
+        include_end = FILE_END_RE.search(include_file)
+        if include_end is not None:
+            include_end = include_end.group(2)
+        else:
+            include_end = include_file
+
+        # if the filename is in the include_paths_names providied by the .h file
+        # search for the path provided in the include_paths array
+        if include_end in include_paths_names:
+            full_path = include_paths[include_paths_names.index(include_end)]
+            target_header = read_files.recursive_headers(full_path.strip(), include_file, include_paths, include_paths_names)
+        else:
+            # otherwise, search using the name itself
+            file_beginning = FILE_END_RE.match(filenames[0])
+            if file_beginning is not None:
+                target_header = read_files.recursive_headers(file_beginning.group(1) + "/" + include_file, include_file, include_paths, include_paths_names)
+            else:
+                target_header = read_files.recursive_headers(include_file, include_file, include_paths, include_paths_names)
+
+    # if all else fails, it is a standard library include, rewrite it as the original
+    if target_header == 1 or target_header == 0:
+        target_header = include_file
+
+    return target_header
+
 # main function to convert from ebcdic to ascii
 def convert_to_ascii(filenames, unicode_encode, skip_print_strings, include_paths, include_paths_names):
-    print("line 48, e2a")
     Source          = open(filenames[0], "rt")
     Target          = open(filenames[1], "at+")
 
@@ -84,136 +203,23 @@ def convert_to_ascii(filenames, unicode_encode, skip_print_strings, include_path
             tokens_of_interest = re.split(SPLIT_RE, line)
             tokens_of_interest = filter(None, tokens_of_interest)
 
-         # mark strings inside functions and between outstream_op which we do not want to be modified
+            # mark strings inside functions and between outstream_op which we do not want to be modified
             delimiters = make_delimiters(tokens_of_interest, skip_print_strings)
 
-            index = 0;
-            newline = ""
-            delimiters.reverse()
-            start_index = -1;
-            stop_index  = -1;
-            ostream_string = False
-
-            while index < (len(tokens_of_interest)):
-                token = tokens_of_interest[index];
-
-                if USTR_MACRO_RE.match(token) or (skip_print_strings and PRINT_FUNCTIONS_RE.match(token)):
-                    if len(delimiters) > 0:
-                        (start_index, stop_index) = delimiters.pop();
-                    token = token
-                    newline = newline + token
-                    index = index +1
-                    continue
-
-                if index >= start_index and index <= stop_index:
-                    token = token
-                    newline = newline + token
-                    index = index + 1
-                    continue
-
-                if skip_print_strings and OUTSTREAM_OP_RE.match(token):
-                    if not ostream_string:
-                        ostream_string = True;
-                    else:
-                        ostream_string = False;
-
-                if NEWLINE_RE.match(token):
-                    if ostream_string:
-                        ostream_string = False;
-
-                if STRING_RE.match(token):
-                    if not ostream_string:
-                        literal = token
-                    if unicode_encode:
-                        if not HEX_ENCODED_STRING_RE.match(literal):
-                            unicode_literal = "u8" + literal
-                            token = unicode_literal
-                    else:
-                        encoded_literal = literal[1:len(literal)-1]
-                        encoded_literal = re.sub(ESCAPE_RE, EncodeEscapeSeq,encoded_literal)
-                        encoded_literal = re.sub(PRINTF_RE, EncodePrintF, encoded_literal)
-                        token_list = re.split(HEX_RE, encoded_literal)
-                        encoded_literal = reduce(lambda x,y: x+y, map(ConvertTokens, token_list))
-                        encoded_literal = "\"" + encoded_literal + "\""
-                        token = encoded_literal
-
-                if CHAR_RE.match(token):
-                    if not ostream_string:
-                        char = token[1:len(token)-1]
-                        encoded_char = ''
-                        escape_seq = ESCAPE_RE.match(char)
-                    if escape_seq:
-                        encoded_char = EncodeEscapeSeq(escape_seq)
-                    else:
-                        encoded_char = ConvertTokens(char)
-                    char = "'" + char + "'"
-                    encoded_char = "'" + encoded_char + "'"
-                    token =  encoded_char
-
-                if STRINGIFY_RE.match(token):
-                    converted_token = ConvertMacroArgs(token)
-                    token = converted_token
-
-                newline = newline + token
-                index = index + 1;
-
-            line = newline;
+            #check what the current line is, determine what to make the new line
+            line = determine_new_line(tokens_of_interest, delimiters, kip_print_strings);
 
         # if the line is an #include statement
         if include_line:
-            target_header = 0
-            quotes = True
 
-            # check if its an absolute path, as those take priority
-            ABSOLUTE_RE = re.compile('#\s*include\s*"(/.*)"')
-            a = ABSOLUTE_RE.search(line)
-            if a is not None:
-                absolute_path = a.group(1)
-                target_header = read_files.recursive_headers(absolute_path, '', include_paths, include_paths_names)
+            # find the name of the new temp header file
+            target_header = find_target_header(line, filenames, include_paths, include_paths_names)
+
+            # write the name of the target header where the source header once was
+            if quotes:
                 Target.write('#include "' + target_header + '"\n')
-
             else:
-                # check if it's a "" or a <> include statement
-                FILE_QUOTES_RE = re.compile('#\s*include\s*"(.*)"')
-                FILE_BRACKETS_RE = re.compile('#\s*include\s*<(.*)>')
-
-                # get the file path provided in the source file
-                include_file = FILE_QUOTES_RE.match(line)
-                if include_file is None:
-                    quotes = False
-                    include_file = FILE_BRACKETS_RE.match(line).group(1)
-                else:
-                    include_file = include_file.group(1)
-
-                # get only the end of the file - the filename
-                FILE_END_ONLY = re.compile('(.*)/(.*)')
-                include_end = FILE_END_ONLY.search(include_file)
-                if include_end is not None:
-                    include_end = include_end.group(2)
-                else:
-                    include_end = include_file
-
-                # if the filename is in the include_paths_names providied by the .h file
-                # search for the path provided in the include_paths array
-                if include_end in include_paths_names:
-                    full_path = include_paths[include_paths_names.index(include_end)]
-                    target_header = read_files.recursive_headers(full_path.strip(), include_file, include_paths, include_paths_names)
-                else:
-                    # otherwise, search using the name itself
-                    file_beginning = FILE_END_ONLY.match(filenames[0])
-                    if file_beginning is not None:
-                        target_header = read_files.recursive_headers(file_beginning.group(1) + "/" + include_file, include_file, include_paths, include_paths_names)
-                    else:
-                        target_header = read_files.recursive_headers(include_file, include_file, include_paths, include_paths_names)
-
-                    # if all else fails, it is a standard library include, rewrite it as the original
-                    if target_header == 1:
-                        target_header = include_file
-
-                if quotes:
-                    Target.write('#include "' + target_header + '"\n')
-                else:
-                    Target.write('#include <' + target_header + '>\n')
+                Target.write('#include <' + target_header + '>\n')
 
         else:
             comment_end = MULTILINE_COMMENT_END.match(line)
@@ -248,38 +254,33 @@ def parse_arguments():
     unicode_encode             = options.unicode_support;
     skip_print_strings         = options.skip_print_strings;
 
+    # go through the header file provided and determine the file path and file
+    # name for every header path provided
     includes = []
     files = []
     if options.headers != []:
         header_file = open(options.headers, 'rt')
         for line in header_file:
-            ABSOLUTE_RE = re.compile('\s*/.*')
             absolute_match = ABSOLUTE_RE.match(line)
             if absolute_match is None:
-                COLON_RE = re.compile('\s*.*:\s*([a-z0-9._/]*)')
                 colon_match = COLON_RE.match(line)
                 if colon_match is not None:
                     line = colon_match.group(1)
                     if absolute_match is None:
                         includes.append(line.rstrip())
-                        FILE_RE = re.compile('.*/([a-z0-9_.]*)')
-                        fsearch = FILE_RE.match(line)
+                        fsearch = FILE_END_RE.match(line)
                         if fsearch is not None:
                             files.append(fsearch.group(1))
                         else:
                             files.append(line.strip())
                 else:
-                    STRIPPED_LINE = re.compile('\s*([a-z0-9._/]*)')
                     includes.append(STRIPPED_LINE.match(line).group(1))
-                    FILE_RE = re.compile('.*/([a-z0-9_.]*)\s*')
-                    fsearch = FILE_RE.match(line)
+                    fsearch = FILE_END_RE.match(line)
                     if fsearch is not None:
                         files.append(fsearch.group(1))
                     else:
                         files.append(line.strip())
 
-    print(includes, "includes")
-    print(files, "files")
     convert_to_ascii(args, unicode_encode, skip_print_strings, includes, files)
 
     # resets the global blacklist contained in read_files.py for header files
