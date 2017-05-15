@@ -124,27 +124,5 @@ class TestIncludePathsNonRec(unittest.TestCase):
 		self.assertTrue(os.path.isfile('tests/include_paths_tests/test_nonrecursive/subtract_temp.h'))
 		self.assertTrue(os.path.isfile('tests/include_paths_tests/test_nonrecursive/different_path/dir1/add_temp.h'))
 
-class TestIncludePathsNonRec(unittest.TestCase):
-
-	def setUp(self):
-		if os.path.isfile('tests/include_paths_tests/test_recursive/actual_code/adding_things_after.cpp'):
-			os.remove('tests/include_paths_tests/test_nonrecursive/adding_things_after.cpp')
-		if os.path.isfile('tests/include_paths_tests/test_nonrecursive/subtract_temp.h'):
-			os.remove('tests/include_paths_tests/test_nonrecursive/subtract_temp.h')
-		if os.path.isfile('tests/include_paths_tests/test_nonrecursive/different_path/dir1/add_temp.h'):
-			os.remove('tests/include_paths_tests/test_nonrecursive/different_path/dir1/add_temp.h')
-
-	def test_include_nonrec_openfiles(self):
-		ebcdic2ascii.open_files(['tests/include_paths_tests/test_nonrecursive/adding_things.cpp', 'tests/include_paths_tests/test_nonrecursive/adding_things_after.cpp'], False, False, ['tests/include_paths_tests/', 'tests/include_paths_tests/test_nonrecursive/different_path/'])
-		self.assertTrue(os.path.isfile('tests/include_paths_tests/test_nonrecursive/adding_things_after.cpp'))
-		self.assertTrue(os.path.isfile('tests/include_paths_tests/test_nonrecursive/subtract_temp.h'))
-		self.assertTrue(os.path.isfile('tests/include_paths_tests/test_nonrecursive/different_path/dir1/add_temp.h'))
-
-	def test_include_nonrec_main(self):
-		os.system('python ebcdic2ascii.py tests/include_paths_tests/test_nonrecursive/adding_things.cpp tests/include_paths_tests/test_nonrecursive/adding_things_after.cpp -I tests/include_paths_tests -I tests/include_paths_tests/test_nonrecursive/different_path/s')
-		self.assertTrue(os.path.isfile('tests/include_paths_tests/test_nonrecursive/adding_things_after.cpp'))
-		self.assertTrue(os.path.isfile('tests/include_paths_tests/test_nonrecursive/subtract_temp.h'))
-		self.assertTrue(os.path.isfile('tests/include_paths_tests/test_nonrecursive/different_path/dir1/add_temp.h'))
-
 if __name__ == '__main__':
 	unittest.main()
