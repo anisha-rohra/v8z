@@ -20,6 +20,12 @@ do
   rm $d
 done
 
-rm $1/garbage.c
+if [ -f $1/garbage.c ]
+then
+    rm $1/garbage.c
+fi
 
-rm $1/a.out
+if [ -f $1/a.out ]
+then
+    rm $1/a.out
+fi

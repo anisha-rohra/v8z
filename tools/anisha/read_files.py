@@ -11,7 +11,6 @@ def reset_blacklist():
 	blacklist = []
 
 def recursive_headers(filepath, filename, include_paths, include_names):
-	print(filepath, filename)
 
 	# need to separate the path before and after the extension in order to
 	# include the _temp portion
@@ -22,9 +21,7 @@ def recursive_headers(filepath, filename, include_paths, include_names):
 	# in case there isn't an extension
 	if dot_search is not None:
 		target = dot_search.group(1) + "_temp." + dot_search.group(2)
-		print(target)
 		target_to_return = dot_search2.group(1) + "_temp." + dot_search2.group(2)
-		print(target, target_to_return)
 	else:
 		target = filepath + "_temp"
 		target_to_return = filename + "_temp"

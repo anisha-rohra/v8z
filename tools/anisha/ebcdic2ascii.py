@@ -253,22 +253,33 @@ def parse_arguments():
     if options.headers != []:
         header_file = open(options.headers, 'rt')
         for line in header_file:
-            COLON_RE = re.compile('\s*.*:\s*(.*)')
-            colon_match = COLON_RE.match(line)
-            if colon_match is not None:
-                line = colon_match.group(1)
-                print(line)
-                ABSOLUTE_RE = re.compile('\s*/.*')
-                absolute_match = ABSOLUTE_RE.match(line)
-                if absolute_match is None:
-                    includes.append(line.rstrip())
-                    FILE_RE = re.compile('.*/(.*)')
+            ABSOLUTE_RE = re.compile('\s*/.*')
+            absolute_match = ABSOLUTE_RE.match(line)
+            if absolute_match is None:
+                COLON_RE = re.compile('\s*.*:\s*([a-z0-9._/]*)')
+                colon_match = COLON_RE.match(line)
+                if colon_match is not None:
+                    line = colon_match.group(1)
+                    if absolute_match is None:
+                        includes.append(line.rstrip())
+                        FILE_RE = re.compile('.*/([a-z0-9_.]*)')
+                        fsearch = FILE_RE.match(line)
+                        if fsearch is not None:
+                            files.append(fsearch.group(1))
+                        else:
+                            files.append(line.strip())
+                else:
+                    STRIPPED_LINE = re.compile('\s*([a-z0-9._/]*)')
+                    includes.append(STRIPPED_LINE.match(line).group(1))
+                    FILE_RE = re.compile('.*/([a-z0-9_.]*)\s*')
                     fsearch = FILE_RE.match(line)
                     if fsearch is not None:
                         files.append(fsearch.group(1))
                     else:
                         files.append(line.strip())
 
+    print(includes, "includes")
+    print(files, "files")
     convert_to_ascii(args, unicode_encode, skip_print_strings, includes, files)
 
     # resets the global blacklist contained in read_files.py for header files

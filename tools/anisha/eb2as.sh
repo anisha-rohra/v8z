@@ -1,23 +1,50 @@
 #!/bin/sh
-xlclang -E -qmakedep $@ > garbage.c
 
-filecount=0
-flagcount=0
+CFLAG=0
 for var in $@
 do
-    if [ $(echo "$var" | sed -E 's/.+(.c)/\1/') != "$var" ] || [ $(echo "$var" | sed -E 's/.+(.cc)/\1/') != "$var" ] || [ $(echo "$var" | sed -E 's/.+(.cpp)/\1/') != "$var" ]
+    if [ $(echo $var | sed -E 's/.+(\.cpp)/\1/') != $var ]
+    then
+        echo "HERE"
+        break
+    fi
+
+    if [ $(echo "$var" | sed -E 's/.+(\.c)/\1/') != $var ] || [ $(echo "$var" | sed -E 's/.+(\.cc)/\1/' != $var) ]
+    then
+        echo "NOT HERE"
+        CFLAG=1
+        break
+    fi
+done
+
+if [ $CFLAG = 0 ]
+then
+    xlclang++ -E -qmakedep $@ > garbage.c
+else
+    xlclang -E -qmakedep $@ > garbage.c
+fi
+
+count=0
+for var in $@
+do
+    if [ $(echo "$var" | sed -E 's/.+(\.c)/\1/') != "$var" ] || [ $(echo "$var" | sed -E 's/.+(\.cc)/\1/') != "$var" ] || [ $(echo "$var" | sed -E 's/.+(\.cpp)/\1/') != "$var" ]
     then
         HEADER=$(echo $var | sed -E 's/.*\/([a-z0-9_]+)\.[a-z]+/\1.u/')
         TEMP=$(echo $var | sed -E 's/(.+)\.([a-z]+)/\1_temp.\2/')
         echo $HEADER
         echo $TEMP
         python ebcdic2ascii.py -H $HEADER $var $TEMP
-        FILES[filecount]=$TEMP
-        (( filecount++ ))
+        COMPILE[count]=$TEMP
+        (( count++ ))
     else
-        FLAGS[flagcount]=$var
-        (( flagcount++ ))
+        COMPILE[count]=$var
+        (( count++ ))
     fi
 done
 
-xlclang ${FLAGS[*]} ${FILES[*]}
+if [ $CFLAG = 1 ]
+then
+    xlclang ${COMPILE[*]}
+else
+    xlclang++ ${COMPILE[*]}
+fi
