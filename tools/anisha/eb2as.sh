@@ -45,4 +45,4 @@ else
     xlclang++ ${COMPILE[*]}
 fi
 
-#./cleanup.sh .
+./cleanup.sh .
