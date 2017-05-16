@@ -1,4 +1,5 @@
-import ebcdic2ascii, sys, re, os, ebcdic2ascii_encoder
+import ebcdic2ascii, sys, re, os
+from ebcdic2ascii_encoder import *
 
 blacklist = []
 

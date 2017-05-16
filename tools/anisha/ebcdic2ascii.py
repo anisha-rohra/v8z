@@ -45,7 +45,7 @@ def make_delimiters(tokens_of_interest, skip_print_strings):
     return delimiters
 
 # takes the tokens and determines the new line that will replace the old
-def determine_new_line(tokens_of_interest, delimiters, skip_print_strings):
+def determine_new_line(tokens_of_interest, delimiters, skip_print_strings, unicode_encode):
     index = 0;
     newline = ""
     delimiters.reverse()
@@ -146,6 +146,7 @@ def find_target_header(line, filenames, include_paths, include_paths_names):
 
         # if the filename is in the include_paths_names providied by the .h file
         # search for the path provided in the include_paths array
+        print(include_end, "include_end")
         if include_end in include_paths_names:
             full_path = include_paths[include_paths_names.index(include_end)]
             target_header = read_files.recursive_headers(full_path.strip(), include_file, include_paths, include_paths_names)
@@ -161,7 +162,7 @@ def find_target_header(line, filenames, include_paths, include_paths_names):
     if target_header == 1 or target_header == 0:
         target_header = include_file
 
-    return target_header
+    return target_header, quotes
 
 # main function to convert from ebcdic to ascii
 def convert_to_ascii(filenames, unicode_encode, skip_print_strings, include_paths, include_paths_names):
@@ -207,13 +208,13 @@ def convert_to_ascii(filenames, unicode_encode, skip_print_strings, include_path
             delimiters = make_delimiters(tokens_of_interest, skip_print_strings)
 
             #check what the current line is, determine what to make the new line
-            line = determine_new_line(tokens_of_interest, delimiters, kip_print_strings);
+            line = determine_new_line(tokens_of_interest, delimiters, skip_print_strings, unicode_encode);
 
         # if the line is an #include statement
         if include_line:
 
             # find the name of the new temp header file
-            target_header = find_target_header(line, filenames, include_paths, include_paths_names)
+            (target_header, quotes) = find_target_header(line, filenames, include_paths, include_paths_names)
 
             # write the name of the target header where the source header once was
             if quotes:
@@ -256,31 +257,28 @@ def parse_arguments():
 
     # go through the header file provided and determine the file path and file
     # name for every header path provided
+
     includes = []
     files = []
     if options.headers != []:
         header_file = open(options.headers, 'rt')
         for line in header_file:
-            absolute_match = ABSOLUTE_RE.match(line)
-            if absolute_match is None:
-                colon_match = COLON_RE.match(line)
-                if colon_match is not None:
-                    line = colon_match.group(1)
-                    if absolute_match is None:
-                        includes.append(line.rstrip())
-                        fsearch = FILE_END_RE.match(line)
-                        if fsearch is not None:
-                            files.append(fsearch.group(1))
-                        else:
-                            files.append(line.strip())
-                else:
-                    includes.append(STRIPPED_LINE.match(line).group(1))
-                    fsearch = FILE_END_RE.match(line)
+            MULTIPLE_HEADERS = re.compile('\s*([a-z0-9_/\.]+)\s*([a-z0-9_/\s\.]*)')
+            multiline = MULTIPLE_HEADERS.match(line)
+            while (multiline is not None):
+                curr = multiline.group(1)
+                absolute_match = ABSOLUTE_RE.match(curr)
+                if absolute_match is None:
+                    includes.append(curr)
+                    fsearch = FILE_END_RE.match(curr)
                     if fsearch is not None:
-                        files.append(fsearch.group(1))
+                        files.append(fsearch.group(2))
                     else:
-                        files.append(line.strip())
+                        files.append(curr.strip())
+                multiline = MULTIPLE_HEADERS.match(multiline.group(2))
 
+    print(includes, "includes")
+    print(files, "files")
     convert_to_ascii(args, unicode_encode, skip_print_strings, includes, files)
 
     # resets the global blacklist contained in read_files.py for header files
