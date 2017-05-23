@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import re, sys, optparse, read_files
+import re, sys, optparse, read_files, os
 from ebcdic2ascii_encoder import *
 
 # takes in a file list and parameters for unicode encoding and skipping print strings
@@ -260,20 +260,25 @@ def parse_arguments():
 
     includes = []
     files = []
-    if options.headers != []:
+    if os.path.isfile(options.headers):
         header_file = open(options.headers, 'rt')
         for line in header_file:
-            MULTIPLE_HEADERS = re.compile('\s*([a-z0-9_/\.]+)\s*([a-z0-9_/\s\.]*)')
+            print(line)
+            MULTIPLE_HEADERS = re.compile('\s*([a-z0-9_/\.:]+)\s*([a-z0-9_/\s\.]*)')
             multiline = MULTIPLE_HEADERS.match(line)
             while (multiline is not None):
                 curr = multiline.group(1)
+                print(curr, "270")
+                print(multiline.group(2), "after")
                 absolute_match = ABSOLUTE_RE.match(curr)
                 if absolute_match is None:
                     includes.append(curr)
                     fsearch = FILE_END_RE.match(curr)
                     if fsearch is not None:
+                        print(curr, "276")
                         files.append(fsearch.group(2))
                     else:
+                        print(curr, "278")
                         files.append(curr.strip())
                 multiline = MULTIPLE_HEADERS.match(multiline.group(2))
 

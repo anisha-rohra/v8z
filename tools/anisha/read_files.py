@@ -19,7 +19,7 @@ def recursive_headers(filepath, filename, include_paths, include_names):
 	dot_search2 = DOT.search(filename)
 
 	# in case there isn't an extension
-	if dot_search is not None:
+	if dot_search2 is not None:
 		target = dot_search.group(1) + "_temp." + dot_search.group(2)
 		target_to_return = dot_search2.group(1) + "_temp." + dot_search2.group(2)
 	else:

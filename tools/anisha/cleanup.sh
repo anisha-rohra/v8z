@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 for d in $(find $1 -name "*_temp.*")
 do

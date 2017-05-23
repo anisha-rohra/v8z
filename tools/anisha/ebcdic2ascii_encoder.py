@@ -35,10 +35,10 @@ IGNORE_RE = re.compile(IGNORE_STRING)
 INCLUDE_RE = re.compile(INCLUDE_STRING)
 FILE_QUOTES_RE = re.compile('#\s*include\s*"(.*)"')
 FILE_BRACKETS_RE = re.compile('#\s*include\s*<(.*)>')
-FILE_END_RE = re.compile('(.*)/([a-z0-9_.]*)\s')
+FILE_END_RE = re.compile('(.*)/([a-z0-9_\.]*)\s*')
 ABSOLUTE_RE = re.compile('\s*(/.*)')
-COLON_RE = re.compile('\s*.*:\s*([a-z0-9._/]*)')
-STRIPPED_LINE = re.compile('\s*([a-z0-9._/]*)')
+COLON_RE = re.compile('\s*.*:\s*([a-z0-9\._/]*)')
+STRIPPED_LINE = re.compile('\s*([a-z0-9\._/]*)')
 DOT = re.compile('(.*)\.(.*)')
 
 #C-string literals in the source
